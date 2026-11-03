@@ -420,7 +420,7 @@
     <div class="brand-sub" style="text-align:right">GCO Private Cloud</div>
     <div class="brand-confidential" style="text-align:right">Strictly Confidential</div>
     <!-- UPDATE DATE HERE each quarter: -->
-    <div class="brand-update" style="text-align:right">Last Update: <span id="lastUpdate">2nd Nov 2026</span></div>
+    <div class="brand-update" style="text-align:right">Last Update: <span id="lastUpdate"></span></div>
   </div>
 </div>
 
@@ -964,6 +964,17 @@ function openModal(d) {
 overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
 modalClose.addEventListener('click', () => overlay.classList.remove('open'));
 document.addEventListener('keydown', e => { if (e.key === 'Escape') overlay.classList.remove('open'); });
+
+// ── LAST UPDATE DATE (today, auto) ───────────────────────────────────────────
+(function() {
+  const d = new Date();
+  const day = d.getDate();
+  const suffix = day === 1 || day === 21 || day === 31 ? 'st'
+               : day === 2 || day === 22 ? 'nd'
+               : day === 3 || day === 23 ? 'rd' : 'th';
+  const month = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+  document.getElementById('lastUpdate').textContent = `${day}${suffix} ${month} ${d.getFullYear()}`;
+})();
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 updateAll();
