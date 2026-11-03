@@ -415,13 +415,35 @@
   </div>
   <div class="topbar-right">
     <div class="brand-title">
-      <span class="brand-logo">GCO</span>
-      <span>Global Cloud Operations</span>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 48" height="36" style="display:block">
+        <defs>
+          <linearGradient id="gcoGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#1a2fa0"/>
+            <stop offset="100%" style="stop-color:#4d8ef0"/>
+          </linearGradient>
+          <linearGradient id="cloudGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#1a2fa0"/>
+            <stop offset="100%" style="stop-color:#6ab0f5"/>
+          </linearGradient>
+        </defs>
+        <!-- Cloud icon -->
+        <g transform="translate(2,4)">
+          <path d="M33,28 Q33,34 27,34 L12,34 Q6,34 6,28 Q6,23 10,22 Q9,20 9,18 Q9,11 16,11 Q17,11 18,11.3 Q20,7 25,7 Q32,7 32,14 Q32,15 31.8,16 Q33,17 33,19 Q36,20 36,23 Q36,27 33,28 Z" fill="url(#cloudGrad)" opacity="0.9"/>
+          <!-- infinity loop inside cloud -->
+          <path d="M13,24 Q13,21 16,21 Q18.5,21 19.5,23 Q20.5,21 23,21 Q26,21 26,24 Q26,27 23,27 Q20.5,27 19.5,25 Q18.5,27 16,27 Q13,27 13,24 Z" fill="none" stroke="#fff" stroke-width="1.8" opacity="0.95"/>
+        </g>
+        <!-- GCO text -->
+        <text x="44" y="34" font-family="Arial,sans-serif" font-size="26" font-weight="900" fill="url(#gcoGrad)" letter-spacing="-0.5">GCO</text>
+        <!-- divider -->
+        <line x1="104" y1="6" x2="104" y2="42" stroke="#1a2fa0" stroke-width="2" opacity="0.5"/>
+        <!-- Global Cloud Operations -->
+        <text x="112" y="34" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="url(#gcoGrad)" letter-spacing="-0.3">Global Cloud Operations</text>
+      </svg>
     </div>
-    <div class="brand-sub">GCO Private Cloud</div>
-    <div class="brand-confidential">Strictly Confidential</div>
+    <div class="brand-sub" style="text-align:right">GCO Private Cloud</div>
+    <div class="brand-confidential" style="text-align:right">Strictly Confidential</div>
     <!-- UPDATE DATE HERE each quarter: -->
-    <div class="brand-update">Last Update: <span id="lastUpdate">2nd Nov 2026</span></div>
+    <div class="brand-update" style="text-align:right">Last Update: <span id="lastUpdate">2nd Nov 2026</span></div>
   </div>
 </div>
 
