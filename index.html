@@ -598,20 +598,32 @@ const PLATFORMS = ['ACS','AWS','Azure','CDC','GCP','IBM','SAP_DC','StackIT'];
 const PLATFORM_LABELS = ['ACS','AWS','Azure','CDC','GCP','IBM Cloud','SAP DC','StackIT'];
 
 // ── GLOBAL FILTER STATE ───────────────────────────────────────────────────────
-// activeStatusFilter: null | 'GA' | 'Released' | 'ER'
+// activeStatusFilter:   null | 'GA' | 'Released' | 'ER'
+// activePlatformFilter: null | 'ACS' | 'AWS' | 'Azure' | ...
 let activeStatusFilter = null;
+let activePlatformFilter = null;
 
 function getFilteredData() {
-  if (!activeStatusFilter) return DATA;
-  return DATA.filter(d =>
-    PLATFORMS.some(p => d[p] === activeStatusFilter)
-  );
+  return DATA.filter(d => {
+    const statusOk = !activeStatusFilter ||
+      PLATFORMS.some(p => d[p] === activeStatusFilter);
+    const platformOk = !activePlatformFilter ||
+      (d[activePlatformFilter] && d[activePlatformFilter] !== '-');
+    return statusOk && platformOk;
+  });
 }
 
-function applyFilter(statusVal) {
+function applyStatusFilter(statusVal) {
   activeStatusFilter = (activeStatusFilter === statusVal) ? null : statusVal;
   updateAll();
 }
+
+function applyPlatformFilter(platformKey) {
+  activePlatformFilter = (activePlatformFilter === platformKey) ? null : platformKey;
+  updateAll();
+}
+
+function applyFilter(statusVal) { applyStatusFilter(statusVal); }
 
 function updateAll() {
   const filtered = getFilteredData();
@@ -625,34 +637,63 @@ function updateAll() {
 }
 
 function updateFilterIndicator() {
-  const existing = document.getElementById('filterBadge');
-  if (existing) existing.remove();
-  if (!activeStatusFilter) return;
+  // status badge (on status chart title)
+  const existingStatus = document.getElementById('filterBadge');
+  if (existingStatus) existingStatus.remove();
+  if (activeStatusFilter) {
+    const label = activeStatusFilter === 'GA' ? 'General Availability'
+                : activeStatusFilter === 'ER' ? 'Early Release'
+                : 'Released';
+    const badge = document.createElement('span');
+    badge.id = 'filterBadge';
+    badge.className = 'filter-badge';
+    badge.textContent = label;
+    badge.title = 'Filter aufheben';
+    badge.addEventListener('click', () => { activeStatusFilter = null; updateAll(); });
+    document.querySelector('.chart-card:nth-child(2) .chart-title').appendChild(badge);
+  }
 
-  const label = activeStatusFilter === 'GA' ? 'General Availability'
-              : activeStatusFilter === 'ER' ? 'Early Release'
-              : 'Released';
-  const badge = document.createElement('span');
-  badge.id = 'filterBadge';
-  badge.className = 'filter-badge';
-  badge.textContent = label;
-  badge.title = 'Filter aufheben';
-  badge.addEventListener('click', () => { activeStatusFilter = null; updateAll(); });
-  document.querySelector('.chart-card:nth-child(2) .chart-title').appendChild(badge);
+  // platform badge (on heatmap chart title)
+  const existingPlat = document.getElementById('filterBadgePlatform');
+  if (existingPlat) existingPlat.remove();
+  if (activePlatformFilter) {
+    const idx = PLATFORMS.indexOf(activePlatformFilter);
+    const label = idx >= 0 ? PLATFORM_LABELS[idx] : activePlatformFilter;
+    const badge = document.createElement('span');
+    badge.id = 'filterBadgePlatform';
+    badge.className = 'filter-badge';
+    badge.textContent = label;
+    badge.title = 'Filter aufheben';
+    badge.addEventListener('click', () => { activePlatformFilter = null; updateAll(); });
+    document.querySelector('.chart-card:nth-child(3) .chart-title').appendChild(badge);
+  }
 }
 
 function updateActiveCardHighlights() {
+  const anyFilter = activeStatusFilter !== null || activePlatformFilter !== null;
   document.querySelectorAll('.chart-card, .kpi-card').forEach(el => {
-    el.classList.toggle('filter-active', activeStatusFilter !== null);
+    el.classList.toggle('filter-active', anyFilter);
   });
 }
 
 // ── KPI ───────────────────────────────────────────────────────────────────────
 function updateKpi(filtered) {
   let count;
-  if (activeStatusFilter) {
+  if (activeStatusFilter && !activePlatformFilter) {
+    // count platform-entries matching the status
     count = filtered.reduce((sum, d) =>
       sum + PLATFORMS.filter(p => d[p] === activeStatusFilter).length, 0);
+  } else if (activePlatformFilter && !activeStatusFilter) {
+    // count platform-entries for this hyperscaler across all statuses
+    count = filtered.reduce((sum, d) => {
+      const v = d[activePlatformFilter];
+      return sum + (v && v !== '-' ? 1 : 0);
+    }, 0);
+  } else if (activeStatusFilter && activePlatformFilter) {
+    // both: count platform-entries for this hyperscaler with this status
+    count = filtered.reduce((sum, d) => {
+      return sum + (d[activePlatformFilter] === activeStatusFilter ? 1 : 0);
+    }, 0);
   } else {
     count = filtered.length;
   }
@@ -839,15 +880,29 @@ function updateHeatmap(filtered) {
   QUARTERS.forEach(q => { html += `<th>${q}</th>`; });
   html += '</tr></thead><tbody>';
   PLATFORMS.forEach((p, i) => {
-    html += `<tr><td class="row-label">${PLATFORM_LABELS[i]}</td>`;
+    const isActive = activePlatformFilter === p;
+    const rowStyle = isActive ? ' style="outline:1px solid #f0a500;"' : '';
+    const labelStyle = isActive
+      ? ' style="color:#f0a500;font-weight:700;cursor:pointer;"'
+      : ' style="cursor:pointer;"';
+    html += `<tr data-platform="${p}"${rowStyle}><td class="row-label"${labelStyle}>${PLATFORM_LABELS[i]}</td>`;
     QUARTERS.forEach(q => {
       const v = matrix[p][q];
-      html += `<td class="${heatClass(v)}">${v || ''}</td>`;
+      const dimmed = activePlatformFilter && !isActive ? ' style="opacity:.25"' : '';
+      html += `<td class="${heatClass(v)}"${dimmed}>${v || ''}</td>`;
     });
     html += '</tr>';
   });
   html += '</tbody></table>';
   document.getElementById('heatmapWrap').innerHTML = html;
+
+  // attach click handlers to rows
+  document.querySelectorAll('#heatmapWrap tr[data-platform]').forEach(tr => {
+    tr.addEventListener('click', () => applyPlatformFilter(tr.dataset.platform));
+    tr.style.cursor = 'pointer';
+    tr.addEventListener('mouseenter', () => { if (activePlatformFilter !== tr.dataset.platform) tr.style.backgroundColor = '#2e2e2e'; });
+    tr.addEventListener('mouseleave', () => { tr.style.backgroundColor = ''; });
+  });
 }
 
 // ── DATA TABLE ────────────────────────────────────────────────────────────────
