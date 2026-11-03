@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GCO Roadmap – SAP ECS CAE</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #1a1a1a;
+    --bg2: #252525;
+    --bg3: #2e2e2e;
+    --border: #3a3a3a;
+    --text: #e0e0e0;
+    --text-dim: #888;
+    --blue: #1a73e8;
+    --blue-light: #4da3ff;
+    --blue-dim: #0d47a1;
+    --ga: #1a73e8;
+    --er: #00acc1;
+    --released: #546e7a;
+    --header-h: 52px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: '72', 'SAP 72', Arial, sans-serif;
+    font-size: 13px;
+    min-height: 100vh;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    background: #111;
+    border-bottom: 1px solid var(--border);
+    min-height: var(--header-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 8px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    overflow: visible;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+  .home-btn {
+    background: none; border: none; color: var(--text); cursor: pointer;
+    font-size: 18px; padding: 4px; line-height: 1;
+    transition: color .15s;
+  }
+  .home-btn:hover { color: var(--blue-light); }
+  .tab-btn {
+    background: var(--blue);
+    border: none;
+    border-radius: 20px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 18px;
+    letter-spacing: .3px;
+    transition: background .15s;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { background: var(--blue-light); }
+  .topbar-right {
+    text-align: right;
+    line-height: 1.5;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .brand-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .brand-logo {
+    background: var(--blue);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 5px;
+    border-radius: 3px;
+    letter-spacing: .5px;
+  }
+  .brand-sub { font-size: 11px; color: var(--text-dim); }
+  .brand-confidential { font-size: 11px; color: #aaa; font-style: italic; }
+  .brand-update { font-size: 11px; color: var(--text-dim); }
+  .brand-update span { color: #ccc; }
+
+  /* ── MAIN CONTENT ── */
+  .main { padding: 20px 24px 40px; max-width: 1400px; margin: 0 auto; }
+
+  /* ── KPI + PDF ROW ── */
+  .kpi-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .kpi-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 22px 16px;
+    min-width: 160px;
+  }
+  .kpi-label {
+    font-size: 11px;
+    color: var(--blue-light);
+    text-decoration: underline;
+    cursor: default;
+    margin-bottom: 8px;
+  }
+  .kpi-value {
+    font-size: 40px;
+    font-weight: 300;
+    color: #fff;
+    line-height: 1;
+  }
+  .pdf-link {
+    color: var(--blue-light);
+    font-size: 12px;
+    text-decoration: none;
+    margin-top: 4px;
+    display: inline-block;
+  }
+  .pdf-link:hover { text-decoration: underline; }
+
+  /* ── CHARTS ROW ── */
+  .charts-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .chart-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px 12px;
+  }
+  .chart-title {
+    font-size: 12px;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+  .chart-title a { color: var(--blue-light); text-decoration: underline; cursor: default; }
+  .chart-wrap { position: relative; height: 180px; }
+
+  /* ── HEATMAP ── */
+  .heatmap-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+  .heatmap-table th {
+    color: var(--text-dim);
+    font-weight: 400;
+    padding: 3px 8px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    font-size: 10px;
+  }
+  .heatmap-table th.row-label { text-align: left; }
+  .heatmap-table td {
+    padding: 4px 8px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    border-bottom: 1px solid #2a2a2a;
+  }
+  .heatmap-table td.row-label {
+    text-align: left;
+    font-weight: 400;
+    color: var(--text-dim);
+    font-size: 11px;
+    padding-right: 10px;
+  }
+  .heat-0 { color: transparent; }
+  .heat-1 { background: #d6e8ff; color: #1a3a6b; }
+  .heat-2 { background: #aacbf5; color: #123060; }
+  .heat-3 { background: #7aaeeb; color: #0d2550; }
+  .heat-4 { background: #4a8fd8; color: #fff; }
+  .heat-5 { background: #2272c3; color: #fff; }
+  .heat-6 { background: #0d52a0; color: #fff; }
+
+  /* ── DATA TABLE SECTION ── */
+  .table-section {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg3);
+  }
+  .table-header-left {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .table-header-right {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dim);
+    letter-spacing: .5px;
+  }
+  .table-controls {
+    padding: 8px 16px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .filter-label { font-size: 11px; color: var(--text-dim); }
+  .filter-select {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    outline: none;
+  }
+  .filter-select:focus { border-color: var(--blue); }
+  .table-scroll { max-height: 420px; overflow-y: auto; }
+  .table-scroll::-webkit-scrollbar { width: 6px; }
+  .table-scroll::-webkit-scrollbar-track { background: var(--bg2); }
+  .table-scroll::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .data-table thead th {
+    background: var(--bg3);
+    color: var(--text-dim);
+    font-weight: 600;
+    font-size: 11px;
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    white-space: nowrap;
+  }
+  .data-table tbody tr {
+    cursor: pointer;
+    transition: background .1s;
+    border-bottom: 1px solid #2a2a2a;
+  }
+  .data-table tbody tr:hover { background: #2d2d2d; }
+  .data-table td {
+    padding: 7px 10px;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  .data-table td.name-col {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 260px;
+  }
+  .jira-link {
+    color: var(--blue-light);
+    text-decoration: none;
+    font-size: 11px;
+  }
+  .jira-link:hover { text-decoration: underline; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .3px;
+    text-align: center;
+    min-width: 36px;
+  }
+  .badge-GA { background: var(--ga); color: #fff; }
+  .badge-ER { background: var(--er); color: #fff; }
+  .badge-Released { background: var(--released); color: #ccc; }
+  .badge-dash { color: var(--text-dim); font-size: 12px; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.65);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px 28px;
+    max-width: 580px;
+    width: 90%;
+    position: relative;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .modal-close {
+    position: absolute;
+    top: 14px; right: 18px;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 20px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .modal-close:hover { color: #fff; }
+  .modal-ticket {
+    font-size: 11px;
+    color: var(--blue-light);
+    margin-bottom: 4px;
+  }
+  .modal-quarter {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+  .modal-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 14px;
+    line-height: 1.3;
+  }
+  .modal-platforms {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .modal-teaser {
+    font-size: 13px;
+    color: #ccc;
+    line-height: 1.6;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px 16px;
+    margin-top: 20px;
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  .footer strong { color: var(--text); font-size: 13px; }
+  .footer a { color: var(--blue-light); text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <button class="home-btn" title="Home">&#8962;</button>
+    <button class="tab-btn">External Customer Roadmap</button>
+  </div>
+  <div class="topbar-right">
+    <div class="brand-title">
+      <span class="brand-logo">GCO</span>
+      <span>Global Cloud Operations</span>
+    </div>
+    <div class="brand-sub">GCO Private Cloud</div>
+    <div class="brand-confidential">Strictly Confidential</div>
+    <!-- UPDATE DATE HERE each quarter: -->
+    <div class="brand-update">Last Update: <span id="lastUpdate">2nd Nov 2026</span></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- KPI + PDF -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-label"># of Roadmap Items</div>
+      <div class="kpi-value" id="kpiTotal">—</div>
+    </div>
+    <div>
+      <a class="pdf-link" href="https://sap.sharepoint.com/:f:/r/sites/60002672/Shared%20Documents/02_Productive/ECS%20CAE/GCO%20Roadmaps/Released%20Roadmaps%20of%20GCO/RM%20Customer%20Versions?d=we7357649e16f416cad7c45851d44be91&csf=1&web=1&e=51XBYy" target="_blank">PDF File</a>
+    </div>
+  </div>
+
+  <!-- CHARTS -->
+  <div class="charts-row">
+    <!-- Chart 1: Line by Quarter -->
+    <div class="chart-card">
+      <div class="chart-title"><a># of Roadmap Items</a> - by Quarter</div>
+      <div class="chart-wrap">
+        <canvas id="chartQuarter"></canvas>
+      </div>
+    </div>
+    <!-- Chart 2: Bar by Status -->
+    <div class="chart-card">
+      <div class="chart-title"><a># of Roadmap Items</a> - by Status</div>
+      <div class="chart-wrap">
+        <canvas id="chartStatus"></canvas>
+      </div>
+    </div>
+    <!-- Chart 3: Heatmap -->
+    <div class="chart-card">
+      <div class="chart-title"><a># of Roadmap Items</a> - by Quarter &amp; Infrastructure Platform</div>
+      <div id="heatmapWrap"></div>
+    </div>
+  </div>
+
+  <!-- DATA TABLE -->
+  <div class="table-section">
+    <div class="table-header">
+      <div class="table-header-left">SAP ECS CAE - Roadmap</div>
+      <div class="table-header-right">Infrastructure Platforms</div>
+    </div>
+    <div class="table-controls">
+      <span class="filter-label">Filter by Quarter:</span>
+      <select class="filter-select" id="quarterFilter">
+        <option value="All">All</option>
+        <option value="Released">Released</option>
+        <option value="Q4 / 2026">Q4 / 2026</option>
+        <option value="Q1 / 2027">Q1 / 2027</option>
+        <option value="Q2 / 2027">Q2 / 2027</option>
+      </select>
+    </div>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>1ECS Jira Ticket</th>
+            <th>Release Quarter</th>
+            <th>Name / Title</th>
+            <th>ACS</th>
+            <th>AWS</th>
+            <th>Azure</th>
+            <th>CDC</th>
+            <th>GCP</th>
+            <th>IBM Cloud</th>
+            <th>SAP DC</th>
+            <th>StackIT</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- FOOTER – same max-width container as main content -->
+<div class="main" style="padding-top:0; padding-bottom:32px;">
+  <div class="footer">
+    <strong>Notice</strong><br>
+    Following the <a href="https://sap.sharepoint.com/sites/CustomerCommitmentPolicy" target="_blank">SAP Global Customer Commitment Policy</a>, this presentation and its contents are intended for internal use only. It must not be shared with customers. No commitments, promises, or agreements regarding the availability of any services or capabilities described herein may be made or implied.<br>
+    This material may support internal discussions that inform customer-facing conversations about potential future directions. However, it does not constitute a binding roadmap or guarantee.<br>
+    Please refer to the full disclaimer within the "<a href="https://sap.sharepoint.com/sites/CustomerCommitmentPolicy" target="_blank">SAP Global Customer Commitment Policy</a>" for further details.
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <button class="modal-close" id="modalClose">&times;</button>
+    <div class="modal-ticket" id="modalTicket"></div>
+    <div class="modal-quarter" id="modalQuarter"></div>
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-platforms" id="modalPlatforms"></div>
+    <div class="modal-teaser" id="modalTeaser"></div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const DATA = [
+  {"key":"1ECSPBM-11968","status":"Q1 / 2027","summary":"GCP micro-segmentation enablement","teaser":"Micro-segmentation on GCP enables workload isolation at the SAP System (SID) level by utilizing GCP Network Tags. This method allows for fine-grained control of traffic within subnets, overcoming the limitations of traditional macro-segmentation, which restricts traffic control to between subnets.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"ER","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-11966","status":"Q4 / 2026","summary":"Azure micro-segmentation enablement","teaser":"Micro-segmentation on Azure enables workload isolation at the SAP System (SID) level by utilizing Azure Application Security Groups. This method allows for fine-grained control of traffic within subnets, overcoming the limitations of traditional macro-segmentation, which restricts traffic control to between subnets.","ACS":"-","AWS":"-","Azure":"ER","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14673","status":"Q4 / 2026","summary":"BRIM on Containers onboarding - EPIC","teaser":"SAP BRIM on ECS: The foundation for a scalable, cloud-native charging and mediation platform.","ACS":"-","AWS":"ER","Azure":"ER","CDC":"-","GCP":"ER","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-11966","status":"Q1 / 2027","summary":"Azure micro-segmentation enablement","teaser":"Micro-segmentation on Azure enables workload isolation at the SAP System (SID) level by utilizing Azure Application Security Groups. This method allows for fine-grained control of traffic within subnets, overcoming the limitations of traditional macro-segmentation, which restricts traffic control to between subnets.","ACS":"-","AWS":"-","Azure":"GA","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-11968","status":"Q2 / 2027","summary":"GCP micro-segmentation enablement","teaser":"Micro-segmentation on GCP enables workload isolation at the SAP System (SID) level by utilizing GCP Network Tags. This method allows for fine-grained control of traffic within subnets, overcoming the limitations of traditional macro-segmentation, which restricts traffic control to between subnets.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-10972","status":"Q4 / 2026","summary":"Pacemaker Enablement for IBM Cloud - HANA SU /NW","teaser":"Basic Pacemaker Enablement on IBM Cloud","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"GA","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-13185","status":"Q4 / 2026","summary":"BRIM solution enablement on HANA on IBM Cloud","teaser":"Enable BRIM solution with HANA DB on IBM Cloud.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"GA","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-13948","status":"Q4 / 2026","summary":"Enable Route Based VPN on IBM Cloud","teaser":"Enable route-based VPN services for customer connectivity to IBM Cloud.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"GA","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14035","status":"Q4 / 2026","summary":"Enable CIS WAF and Public Path on IBM Cloud","teaser":"Enable a secure WAF offering and public-path connectivity for customers on IBM Cloud.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"GA","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14229","status":"Q4 / 2026","summary":"Evaluate gcFUSE for bucket mounting","teaser":"Evaluate gcFUSE for mounting GCP storage buckets by validating performance, compatibility, and integration with existing GCFS workflows to assess suitability for production use.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14239","status":"Q4 / 2026","summary":"GCFS – Immutability using Backup Vault","teaser":"Implement GCFS immutability using Backup Vault by configuring immutable retention policies and validating tamper-proof backups. This enhances data integrity, ensures compliance, and protects against accidental or malicious data modification.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14271","status":"Q4 / 2026","summary":"Instance migration between machine types","teaser":"Develop a workflow to enable smooth migration between GCP instance families, ensuring safe scaling while reducing operational risks and improving performance on newer instance types.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14482","status":"Q4 / 2026","summary":"SAPIQ on IBM Cloud Enablement","teaser":"Enable SAP IQ on IBM Cloud","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"GA","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-15343","status":"Q4 / 2026","summary":"Enable India Mumbai Cloud Region","teaser":"IBM Cloud is expanding its offerings in the Mumbai region. This new addition will provide customers with greater flexibility and choice, enabling them to select their preferred location for hosting SAP workloads.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"GA","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-16259","status":"Q4 / 2026","summary":"GCP Cloud (Native Replication) - SAP BI - HA (SDDR) and DR (LDDR) Enablement","teaser":"SAP Business Intelligence Platform SDDR/LDDR enablement using GCP Cloud native replication","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-16430","status":"Q4 / 2026","summary":"X5 Infrastructure Readiness & Platform Enablement","teaser":"Prepare the test landscape, validation checklists, and test plan to ensure smooth and timely testing for X5 enablement.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-5190","status":"Q4 / 2026","summary":"Internet edge redesign (Secure Access/SSE) Umbrella","teaser":"Implement Cisco SSE for ~8,000 customers, impacting infrastructure and network security. It enhances perimeter security with improved threat detection, secure access, centralised policy management, and modern network protection, strengthening the security posture and enabling real-time threat detection and response.","ACS":"-","AWS":"-","Azure":"GA","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-6930","status":"Q4 / 2026","summary":"Zone Resilient VM Feature with Premium ZRS Disks","teaser":"Enable the Zone-Resilient VM feature on ZRS disks to provide zonal high availability at the infrastructure level when replication is not available at the solution level. It also enables faster VM recovery in another zone using ZRS storage during zonal outages with minimal post-failover effort.","ACS":"-","AWS":"-","Azure":"GA","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-13120","status":"Q1 / 2027","summary":"SSLENFORCE for DB2","teaser":"Enable and enforce SSL encryption (“sslenforce”) for all DB2 database connections to enhance security and ensure data in transit is encrypted.","ACS":"-","AWS":"GA","Azure":"GA","CDC":"-","GCP":"GA","IBM":"GA","SAP_DC":"GA","StackIT":"-"},
+  {"key":"1ECSPBM-14201","status":"Q1 / 2027","summary":"Edge Integration Cell as a solution into ECS portfolio.","teaser":"SAP Edge Integration Cell, an extension to Integration Suite on BTP, is an on-premise runtime engine that delivers an integration solution across cloud and on-premise solutions with a common integration platform.","ACS":"-","AWS":"GA","Azure":"GA","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14673","status":"Q1 / 2027","summary":"BRIM on Containers onboarding - EPIC","teaser":"SAP BRIM on ECS: The foundation for a scalable, cloud-native charging and mediation platform.","ACS":"-","AWS":"GA","Azure":"GA","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-16196","status":"Q1 / 2027","summary":"AWS High Availability 99.95","teaser":"Enable AWS 99.95% High Availability service delivery on AWS.","ACS":"-","AWS":"GA","Azure":"-","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-10550","status":"Q4 / 2026","summary":"Advanced DDoS Mitigation for RISE","teaser":"The aim of this service is to provide AWS Shield Advanced and Azure DDoS Protection for DDoS mitigation for RISE customers on AWS and Azure.","ACS":"-","AWS":"GA","Azure":"GA","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-11967","status":"Q4 / 2026","summary":"AWS micro-segmentation enablement","teaser":"Micro-segmentation on AWS enables workload isolation at the SAP System (SID) level by utilizing AWS Security Groups. This method allows for fine-grained control of traffic within subnets, overcoming the limitations of traditional macro-segmentation, which restricts traffic control to between subnets.","ACS":"-","AWS":"GA","Azure":"-","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-13196","status":"Q4 / 2026","summary":"SAP HANA Data Lake (HDL) on SAP Public Cloud Integration","teaser":"Integration of SAP HANA Data Lake Files (HDL) with Cloud Services","ACS":"-","AWS":"GA","Azure":"GA","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"GA","StackIT":"-"},
+  {"key":"1ECSPBM-13250","status":"Q4 / 2026","summary":"SAP HANA Cloud, Data Lake Relational Engine Integration","teaser":"Integration of SAP HANA Data Lake Files (HDL) with Cloud Services","ACS":"-","AWS":"GA","Azure":"GA","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"GA","StackIT":"-"},
+  {"key":"1ECSPBM-16086","status":"Q4 / 2026","summary":"Raven Self-Service - Premium offering","teaser":"Raven Self-Service (Phase 2) includes a multi-tenant frontend that allows customers to access their own dashboards, reports, alerts, and basic automation and orchestration features. It also includes enhancements to the existing Phase 1 scope. New dashboards and reports in scope for Phase 2 include Application Security (including threat dashboards and UBA analytics).","ACS":"-","AWS":"GA","Azure":"GA","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-16121","status":"Q4 / 2026","summary":"FWaaS Automatic Policy Builder","teaser":"Currently the default policy has been preloaded for every customer FWaaS landscape. And we request customer custom policies according to the requirement.","ACS":"-","AWS":"GA","Azure":"GA","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-18099","status":"Q4 / 2026","summary":"Region Enablement - Chile: sa-south-1","teaser":"Enable support for the AWS Chile region within our infrastructure and services. This includes configuring region-specific settings, ensuring compatibility of existing workloads, and updating deployment pipelines to allow provisioning of resources in the Chile region.","ACS":"-","AWS":"GA","Azure":"-","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-9858","status":"Q4 / 2026","summary":"Cloud Native Network Connections (Resource GW and Resource endpoints) for RISE","teaser":"The Seamless Private Connectivity offering, using AWS Resource Gateway and Amazon VPC Lattice, abstracts the network layer, enabling customers to connect existing infrastructure to SAP RISE in days. It avoids IP conflicts, eliminates redesigns, preserves network control, and accelerates provisioning, onboarding, and time to value.","ACS":"-","AWS":"GA","Azure":"-","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-9947","status":"Q4 / 2026","summary":"Multi-AZ Volumes Review","teaser":"Enables higher application resilience with synchronous EBS replication across Availability Zones, providing improved availability, zero data loss protection, and simplified recovery for critical workloads.","ACS":"-","AWS":"GA","Azure":"-","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-12569","status":"Q1 / 2027","summary":"Pacemaker Enablement for Alibaba Cloud Services","teaser":"99.9% Availability SLA architecture with Pacemaker Cluster on Alibaba Cloud.","ACS":"GA","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14721","status":"Q4 / 2026","summary":"FWaaS on Alibaba Cloud Services","teaser":"FWaaS is an established security solution for RISE with SAP, Private Cloud Edition customers, providing macro-segmentation, customized rule bases for traffic filtering, and deep packet inspection capabilities for improved security.","ACS":"GA","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-10072","status":"Released","summary":"PMK to ECS managed Keys for data at rest","teaser":"Encryption keys at the storage layer will be migrated from platform-managed keys (PMK) to ECS-managed keys for Azure hyperscalers.","ACS":"-","AWS":"-","Azure":"Released","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-12223","status":"Released","summary":"GCP Service Controls: Rollout Framework & Security Perimeter Design","teaser":"Define the security perimeter and rollout steps to enable VPC Service Controls for all customers, based on Vodafone pilot learnings, ensuring compliance while addressing customer-specific exceptions.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-12392","status":"Released","summary":"Consistency snapshot enablement for striped volume with snappy","teaser":"Enable agent-based, crash-consistent snapshots for large HANA instances with striped Hyperdisk volumes to improve performance, reduce TCO, and ensure reliable backups using the Google Cloud SAP Agent.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-13181","status":"Released","summary":"SAP BI enablement on Linux OS and ASE DB","teaser":"Enable SAP Business Intelligence Platform (Linux/ASE) on IBM Cloud.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"Released","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-13182","status":"Released","summary":"NW ABAP and JAVA based solution enablement on ASE on IBM Cloud","teaser":"Enable Netweaver ABAP and JAVA solution with ASE DB on IBM Cloud.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"Released","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-13183","status":"Released","summary":"SAP Content Server on MaxDB enablement on IBM Cloud.","teaser":"Enable SAP Content Server on MaxDB on IBM Cloud.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"Released","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-13237","status":"Released","summary":"SAP Solution Manager - ABAP and JAVA","teaser":"Enable SAP Solution Manager on HANA on IBM Cloud to support the deployment and hosting of Solution Manager systems on HANA databases via IBM Cloud PowerVS.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"Released","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-13288","status":"Released","summary":"Conversion to Zonal Deployment Architecture on Azure","teaser":"Enable transition from non-zonal (Availability Set-based) to zonal deployment in Azure to improve resilience and fault isolation across Availability Zones. Service applies only to Azure regions supporting Availability Zones.","ACS":"-","AWS":"-","Azure":"Released","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-13457","status":"Released","summary":"99.95% SLA - Phase 1 implementation","teaser":"Enhanced architecture to offer 99.95% availability SLA on GCP.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14007","status":"Released","summary":"Enable Multiple Service Account Support","teaser":"Introduce support for multiple Service Accounts in standard RISE projects to enable more granular permission management for Compute Instances and improve operational flexibility for both SAP and customers.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14231","status":"Released","summary":"GCFS Premium evaluate alternatives","teaser":"Evaluate alternative solutions for GCFS Premium by comparing performance, reliability, and cost to identify the most suitable option. Deliver clear recommendations to support adoption, migration, or enhancement decisions.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14232","status":"Released","summary":"GCFS replication for Regional tier","teaser":"Implementation of GCFS replication for the Regional tier to improve data resilience, availability, and business continuity through validated replication and failover mechanisms.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14245","status":"Released","summary":"Industrialize higher SLA - 99.95%","teaser":"Industrialize 99.95% SLA service delivery through automation, monitoring, and operational improvements.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14480","status":"Released","summary":"ASE on IBM Cloud Enablement","teaser":"Enable SAP ASE database support on IBM Cloud VPC.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"Released","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14554","status":"Released","summary":"SAP DS enablement on Linux OS and ASE DB","teaser":"Enable SAP Data Services support for Linux and ASE on IBM Cloud Platform","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"Released","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-15342","status":"Released","summary":"Enable India Chennai Cloud Region","teaser":"IBM Cloud is expanding its offerings in the India region. This new addition will provide customers with greater flexibility and choice, enabling them to select their preferred location for hosting SAP workloads.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"Released","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-15746","status":"Released","summary":"GCFS zonal tier POC and enablement","teaser":"Execute a GCFS Zonal Tier PoC to validate performance, security, and TIC integration, followed by enablement in TIC self-service. This introduces a cost-effective storage option for non-critical workloads and expands workload-aligned storage offerings within TIC.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-15747","status":"Released","summary":"VPC service control planning and implementation with SM team for VD6","teaser":"Plan and implement VPC Service Controls (VPC-SC) for VD6 in collaboration with the SM team.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-16037","status":"Released","summary":"In-Transit Encryption Options for Filestore","teaser":"Evaluate and implement Kerberos-based in-transit encryption (NFSv4.1, krb5p) for Google Cloud File Store in RISE environments to meet regulatory and customer requirements. Includes building a VLAB, testing scenarios, documenting the solution, and preparing for operational handover.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-17380","status":"Released","summary":"SAP RISE Global M-Series Migrations (M1→M3 / M2→M4)","teaser":"Migrate SAP customer workloads from legacy Google Cloud memory-optimized instances to next-generation platforms as part of Google data center infrastructure modernization.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-17529","status":"Released","summary":"SAP Agent Version Upgrade Plan for GCO","teaser":"Upgrade SAP Agent to v3.15 across SAP X4 machines to enable enhanced monitoring and latest supported capabilities.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14752","status":"Released","summary":"Aim to get better Flexibility across instance families","teaser":"Expand Flex ISP to increase instance family flexibility","ACS":"-","AWS":"Released","Azure":"-","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-15383","status":"Released","summary":"Raven Self-Service - Standard offering","teaser":"Raven Self-Service (Phase-1) includes a frontend with multi tenancy where a customer can see his own Dashboards and Reports for Vulnerability & Patch, Comply & Hardening, Network & Endpoint Security, Application security (only threat activity).","ACS":"-","AWS":"Released","Azure":"Released","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-5263","status":"Released","summary":"ASE Database Encryption by Default","teaser":"Enable database encryption by default in ECS to deliver stronger security and compliance for new customer systems.","ACS":"-","AWS":"Released","Azure":"Released","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-5294","status":"Released","summary":"SAP Cloud Connector as Containerized Service","teaser":"Running SAP Cloud Connector as a container service orchestrated by SAP Gardener is a significant step toward application modernization and cloud-native adoption, helping ECS operate the service with improved availability and greater resilience.","ACS":"-","AWS":"Released","Azure":"Released","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-5302","status":"Released","summary":"SAP WebDispatcher as Containerized Service","teaser":"Deploying SAP Web Dispatcher as a containerized service orchestrated by SAP Gardener represents a key step toward application modernization and cloud-native adoption, enabling ECS to achieve improved availability and enhanced resilience.","ACS":"-","AWS":"Released","Azure":"Released","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-6541","status":"Released","summary":"AWS - IPv6 enablement for ECS private cloud","teaser":"IPv6 enablement on AWS is a capability extension to networking resources that enables dual-stack (IPv4/IPv6). It allows VPCs, EC2 instances, and Application Load Balancers to communicate over IPv6, providing a large, future-ready address space.","ACS":"-","AWS":"Released","Azure":"-","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-6959","status":"Released","summary":"Region Enablement - Saudi Arabia: me-west-1","teaser":"AWS Cloud is expanding its offerings in the cloud region. This new addition will give our customers greater flexibility and choice, allowing them to select their preferred location for hosting SAP workloads","ACS":"-","AWS":"Released","Azure":"-","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-9909","status":"Released","summary":"Loadbalancer for High Availability (LBHA) for HANA - Enablement","teaser":"Enable LBHA functionality for AWS systems with HANA and ABAP/JAVA, ensuring stable IP addresses during failover and supporting seamless high-availability operations.","ACS":"-","AWS":"Released","Azure":"-","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"}
+];
+
+// ── CONSTANTS ─────────────────────────────────────────────────────────────────
+const QUARTERS = ['Released', 'Q4 / 2026', 'Q1 / 2027', 'Q2 / 2027'];
+const QUARTER_LABELS = ['Released', 'Q4 / 2026', 'Q1 / 2027', 'Q2 / 2027'];
+const PLATFORMS = ['ACS','AWS','Azure','CDC','GCP','IBM','SAP_DC','StackIT'];
+const PLATFORM_LABELS = ['ACS','AWS','Azure','CDC','GCP','IBM Cloud','SAP DC','StackIT'];
+
+// ── KPI ───────────────────────────────────────────────────────────────────────
+document.getElementById('kpiTotal').textContent = DATA.length;
+
+// ── CHART 1: LINE – by Quarter ────────────────────────────────────────────────
+(function() {
+  const counts = QUARTERS.map(q => DATA.filter(d => d.status === q).length);
+  const ctx = document.getElementById('chartQuarter').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: QUARTER_LABELS,
+      datasets: [{
+        data: counts,
+        borderColor: '#4da3ff',
+        backgroundColor: 'rgba(77,163,255,.15)',
+        pointBackgroundColor: '#4da3ff',
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        tension: 0.3,
+        fill: true,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        datalabels: { display: false },
+        tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.y } }
+      },
+      scales: {
+        x: {
+          grid: { color: '#333' },
+          ticks: { color: '#888', font: { size: 10 } }
+        },
+        y: {
+          display: false,
+          beginAtZero: true
+        }
+      },
+      layout: { padding: { top: 20, bottom: 4 } }
+    },
+    plugins: [{
+      id: 'datalabels',
+      afterDatasetsDraw(chart) {
+        const { ctx, data } = chart;
+        chart.data.datasets.forEach((dataset, i) => {
+          const meta = chart.getDatasetMeta(i);
+          meta.data.forEach((pt, j) => {
+            const v = dataset.data[j];
+            ctx.save();
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(v, pt.x, pt.y - 6);
+            ctx.restore();
+          });
+        });
+      }
+    }]
+  });
+})();
+
+// ── CHART 2: HORIZONTAL BAR – by Status ──────────────────────────────────────
+(function() {
+  let gaCount = 0, relCount = 0, erCount = 0;
+  DATA.forEach(d => {
+    PLATFORMS.forEach(p => {
+      const v = d[p];
+      if (v === 'GA') gaCount++;
+      else if (v === 'Released') relCount++;
+      else if (v === 'ER') erCount++;
+    });
+  });
+  const ctx = document.getElementById('chartStatus').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['General Availability', 'Released', 'Early Release'],
+      datasets: [{
+        data: [gaCount, relCount, erCount],
+        backgroundColor: ['#1a73e8', '#1a73e8', '#1a73e8'],
+        borderRadius: 2,
+        barThickness: 24
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.x } }
+      },
+      scales: {
+        x: {
+          grid: { color: '#333' },
+          ticks: { color: '#888', font: { size: 10 } },
+          beginAtZero: true
+        },
+        y: {
+          grid: { display: false },
+          ticks: { color: '#ccc', font: { size: 11 } }
+        }
+      },
+      layout: { padding: { right: 32 } }
+    },
+    plugins: [{
+      id: 'barLabels',
+      afterDatasetsDraw(chart) {
+        const { ctx } = chart;
+        chart.data.datasets.forEach((dataset, i) => {
+          const meta = chart.getDatasetMeta(i);
+          meta.data.forEach((bar, j) => {
+            const v = dataset.data[j];
+            const { x, y } = bar.getProps(['x', 'y'], true);
+            ctx.save();
+            ctx.fillStyle = '#ccc';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(v, x + 6, y);
+            ctx.restore();
+          });
+        });
+      }
+    }]
+  });
+})();
+
+// ── CHART 3: HEATMAP TABLE ────────────────────────────────────────────────────
+(function() {
+  const matrix = {};
+  PLATFORMS.forEach(p => {
+    matrix[p] = {};
+    QUARTERS.forEach(q => { matrix[p][q] = 0; });
+  });
+  DATA.forEach(d => {
+    PLATFORMS.forEach(p => {
+      const v = d[p];
+      if (v && v !== '-') matrix[p][d.status]++;
+    });
+  });
+
+  const maxVal = Math.max(...PLATFORMS.flatMap(p => QUARTERS.map(q => matrix[p][q])));
+
+  function heatClass(v) {
+    if (v === 0) return 'heat-0';
+    const idx = Math.ceil((v / maxVal) * 6);
+    return 'heat-' + Math.min(idx, 6);
+  }
+
+  let html = '<table class="heatmap-table">';
+  html += '<thead><tr><th class="row-label"></th>';
+  QUARTERS.forEach(q => { html += `<th>${q}</th>`; });
+  html += '</tr></thead><tbody>';
+
+  PLATFORMS.forEach((p, i) => {
+    html += `<tr><td class="row-label">${PLATFORM_LABELS[i]}</td>`;
+    QUARTERS.forEach(q => {
+      const v = matrix[p][q];
+      html += `<td class="${heatClass(v)}">${v || ''}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('heatmapWrap').innerHTML = html;
+})();
+
+// ── DATA TABLE ────────────────────────────────────────────────────────────────
+function badge(val) {
+  if (!val || val === '-') return '<span class="badge-dash">-</span>';
+  return `<span class="badge badge-${val}">${val}</span>`;
+}
+
+function renderTable(filter) {
+  const rows = filter === 'All' ? DATA : DATA.filter(d => d.status === filter);
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = rows.map((d, i) => `
+    <tr data-idx="${DATA.indexOf(d)}">
+      <td><a class="jira-link" href="https://jira.tools.sap/browse/${d.key}" target="_blank" onclick="event.stopPropagation()">${d.key}</a></td>
+      <td>${d.status}</td>
+      <td class="name-col" title="${d.summary.replace(/"/g,'&quot;')}">${d.summary}</td>
+      <td>${badge(d.ACS)}</td>
+      <td>${badge(d.AWS)}</td>
+      <td>${badge(d.Azure)}</td>
+      <td>${badge(d.CDC)}</td>
+      <td>${badge(d.GCP)}</td>
+      <td>${badge(d.IBM)}</td>
+      <td>${badge(d.SAP_DC)}</td>
+      <td>${badge(d.StackIT)}</td>
+    </tr>`).join('');
+
+  tbody.querySelectorAll('tr').forEach(tr => {
+    tr.addEventListener('click', () => openModal(DATA[+tr.dataset.idx]));
+  });
+}
+
+document.getElementById('quarterFilter').addEventListener('change', e => {
+  renderTable(e.target.value);
+});
+
+renderTable('All');
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+const overlay = document.getElementById('modalOverlay');
+const modalClose = document.getElementById('modalClose');
+
+function openModal(d) {
+  document.getElementById('modalTicket').textContent = d.key;
+  document.getElementById('modalQuarter').textContent = d.status;
+  document.getElementById('modalTitle').textContent = d.summary;
+  document.getElementById('modalTeaser').textContent = d.teaser;
+
+  const platforms = document.getElementById('modalPlatforms');
+  platforms.innerHTML = PLATFORMS.map((p, i) => {
+    const v = d[p];
+    if (!v || v === '-') return '';
+    return `<span class="badge badge-${v}">${PLATFORM_LABELS[i]}: ${v}</span>`;
+  }).join('');
+
+  overlay.classList.add('open');
+}
+
+overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+modalClose.addEventListener('click', () => overlay.classList.remove('open'));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') overlay.classList.remove('open'); });
+</script>
+</body>
+</html>
