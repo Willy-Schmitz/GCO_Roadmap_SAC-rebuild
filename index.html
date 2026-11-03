@@ -649,7 +649,14 @@ function updateActiveCardHighlights() {
 
 // ── KPI ───────────────────────────────────────────────────────────────────────
 function updateKpi(filtered) {
-  document.getElementById('kpiTotal').textContent = filtered.length;
+  let count;
+  if (activeStatusFilter) {
+    count = filtered.reduce((sum, d) =>
+      sum + PLATFORMS.filter(p => d[p] === activeStatusFilter).length, 0);
+  } else {
+    count = filtered.length;
+  }
+  document.getElementById('kpiTotal').textContent = count;
 }
 
 // ── CHART 1: LINE – by Quarter ────────────────────────────────────────────────
