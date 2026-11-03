@@ -48,8 +48,8 @@
   .topbar-left { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
   .home-btn {
     background: none; border: none; color: var(--text); cursor: pointer;
-    font-size: 18px; padding: 4px; line-height: 1;
-    transition: color .15s;
+    font-size: 32px; padding: 4px; line-height: 1;
+    transition: color .15s; text-decoration: none; display: inline-flex; align-items: center;
   }
   .home-btn:hover { color: var(--blue-light); }
   .tab-btn {
@@ -410,8 +410,8 @@
 <!-- TOP BAR -->
 <div class="topbar">
   <div class="topbar-left">
-    <button class="home-btn" title="Home">&#8962;</button>
-    <button class="tab-btn">External Customer Roadmap</button>
+    <a class="home-btn" href="https://sap.sharepoint.com/teams/ECSCustomerFacingRoadmap/SitePages/Roadmap-Insights.aspx" title="Back to Roadmap Insights">&#8962;</a>
+    <button class="tab-btn" onclick="activeStatusFilter=null;activePlatformFilter=null;updateAll();">External Customer Roadmap</button>
   </div>
   <div class="topbar-right">
     <div class="brand-title">
