@@ -111,6 +111,11 @@
     border-radius: 6px;
     padding: 14px 22px 16px;
     min-width: 160px;
+    transition: border-color .2s;
+  }
+  .kpi-card.filter-active {
+    border-color: var(--blue-light);
+    box-shadow: 0 0 0 1px var(--blue-light);
   }
   .kpi-label {
     font-size: 11px;
@@ -146,7 +151,28 @@
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 14px 16px 12px;
+    transition: border-color .2s;
   }
+  .chart-card.filter-active {
+    border-color: var(--blue-light);
+    box-shadow: 0 0 0 1px var(--blue-light);
+  }
+
+  /* filter-active indicator in status chart */
+  .filter-badge {
+    display: inline-block;
+    background: var(--blue);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 8px;
+    cursor: pointer;
+    vertical-align: middle;
+  }
+  .filter-badge:hover { background: #c0392b; }
+  .filter-badge::before { content: '✕ '; }
   .chart-title {
     font-size: 12px;
     margin-bottom: 12px;
@@ -519,7 +545,7 @@ const DATA = [
   {"key":"1ECSPBM-16430","status":"Q4 / 2026","summary":"X5 Infrastructure Readiness & Platform Enablement","teaser":"Prepare the test landscape, validation checklists, and test plan to ensure smooth and timely testing for X5 enablement.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"-","StackIT":"-"},
   {"key":"1ECSPBM-5190","status":"Q4 / 2026","summary":"Internet edge redesign (Secure Access/SSE) Umbrella","teaser":"Implement Cisco SSE for ~8,000 customers, impacting infrastructure and network security. It enhances perimeter security with improved threat detection, secure access, centralised policy management, and modern network protection, strengthening the security posture and enabling real-time threat detection and response.","ACS":"-","AWS":"-","Azure":"GA","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
   {"key":"1ECSPBM-6930","status":"Q4 / 2026","summary":"Zone Resilient VM Feature with Premium ZRS Disks","teaser":"Enable the Zone-Resilient VM feature on ZRS disks to provide zonal high availability at the infrastructure level when replication is not available at the solution level. It also enables faster VM recovery in another zone using ZRS storage during zonal outages with minimal post-failover effort.","ACS":"-","AWS":"-","Azure":"GA","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
-  {"key":"1ECSPBM-13120","status":"Q1 / 2027","summary":"SSLENFORCE for DB2","teaser":"Enable and enforce SSL encryption (“sslenforce”) for all DB2 database connections to enhance security and ensure data in transit is encrypted.","ACS":"-","AWS":"GA","Azure":"GA","CDC":"-","GCP":"GA","IBM":"GA","SAP_DC":"GA","StackIT":"-"},
+  {"key":"1ECSPBM-13120","status":"Q1 / 2027","summary":"SSLENFORCE for DB2","teaser":"Enable and enforce SSL encryption ("sslenforce") for all DB2 database connections to enhance security and ensure data in transit is encrypted.","ACS":"-","AWS":"GA","Azure":"GA","CDC":"-","GCP":"GA","IBM":"GA","SAP_DC":"GA","StackIT":"-"},
   {"key":"1ECSPBM-14201","status":"Q1 / 2027","summary":"Edge Integration Cell as a solution into ECS portfolio.","teaser":"SAP Edge Integration Cell, an extension to Integration Suite on BTP, is an on-premise runtime engine that delivers an integration solution across cloud and on-premise solutions with a common integration platform.","ACS":"-","AWS":"GA","Azure":"GA","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"-","StackIT":"-"},
   {"key":"1ECSPBM-14673","status":"Q1 / 2027","summary":"BRIM on Containers onboarding - EPIC","teaser":"SAP BRIM on ECS: The foundation for a scalable, cloud-native charging and mediation platform.","ACS":"-","AWS":"GA","Azure":"GA","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"-","StackIT":"-"},
   {"key":"1ECSPBM-16196","status":"Q1 / 2027","summary":"AWS High Availability 99.95","teaser":"Enable AWS 99.95% High Availability service delivery on AWS.","ACS":"-","AWS":"GA","Azure":"-","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
@@ -571,14 +597,72 @@ const QUARTER_LABELS = ['Released', 'Q4 / 2026', 'Q1 / 2027', 'Q2 / 2027'];
 const PLATFORMS = ['ACS','AWS','Azure','CDC','GCP','IBM','SAP_DC','StackIT'];
 const PLATFORM_LABELS = ['ACS','AWS','Azure','CDC','GCP','IBM Cloud','SAP DC','StackIT'];
 
+// ── GLOBAL FILTER STATE ───────────────────────────────────────────────────────
+// activeStatusFilter: null | 'GA' | 'Released' | 'ER'
+let activeStatusFilter = null;
+
+function getFilteredData() {
+  if (!activeStatusFilter) return DATA;
+  return DATA.filter(d =>
+    PLATFORMS.some(p => d[p] === activeStatusFilter)
+  );
+}
+
+function applyFilter(statusVal) {
+  activeStatusFilter = (activeStatusFilter === statusVal) ? null : statusVal;
+  updateAll();
+}
+
+function updateAll() {
+  const filtered = getFilteredData();
+  updateKpi(filtered);
+  updateChartQuarter(filtered);
+  updateChartStatus(filtered);
+  updateHeatmap(filtered);
+  renderTable('All', filtered);
+  updateFilterIndicator();
+  updateActiveCardHighlights();
+}
+
+function updateFilterIndicator() {
+  const existing = document.getElementById('filterBadge');
+  if (existing) existing.remove();
+  if (!activeStatusFilter) return;
+
+  const label = activeStatusFilter === 'GA' ? 'General Availability'
+              : activeStatusFilter === 'ER' ? 'Early Release'
+              : 'Released';
+  const badge = document.createElement('span');
+  badge.id = 'filterBadge';
+  badge.className = 'filter-badge';
+  badge.textContent = label;
+  badge.title = 'Filter aufheben';
+  badge.addEventListener('click', () => { activeStatusFilter = null; updateAll(); });
+  document.querySelector('.chart-card:nth-child(2) .chart-title').appendChild(badge);
+}
+
+function updateActiveCardHighlights() {
+  document.querySelectorAll('.chart-card, .kpi-card').forEach(el => {
+    el.classList.toggle('filter-active', activeStatusFilter !== null);
+  });
+}
+
 // ── KPI ───────────────────────────────────────────────────────────────────────
-document.getElementById('kpiTotal').textContent = DATA.length;
+function updateKpi(filtered) {
+  document.getElementById('kpiTotal').textContent = filtered.length;
+}
 
 // ── CHART 1: LINE – by Quarter ────────────────────────────────────────────────
-(function() {
-  const counts = QUARTERS.map(q => DATA.filter(d => d.status === q).length);
+let chartQuarter = null;
+function updateChartQuarter(filtered) {
+  const counts = QUARTERS.map(q => filtered.filter(d => d.status === q).length);
+  if (chartQuarter) {
+    chartQuarter.data.datasets[0].data = counts;
+    chartQuarter.update();
+    return;
+  }
   const ctx = document.getElementById('chartQuarter').getContext('2d');
-  new Chart(ctx, {
+  chartQuarter = new Chart(ctx, {
     type: 'line',
     data: {
       labels: QUARTER_LABELS,
@@ -602,14 +686,8 @@ document.getElementById('kpiTotal').textContent = DATA.length;
         tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.y } }
       },
       scales: {
-        x: {
-          grid: { color: '#333' },
-          ticks: { color: '#888', font: { size: 10 } }
-        },
-        y: {
-          display: false,
-          beginAtZero: true
-        }
+        x: { grid: { color: '#333' }, ticks: { color: '#888', font: { size: 10 } } },
+        y: { display: false, beginAtZero: true }
       },
       layout: { padding: { top: 20, bottom: 4 } }
     },
@@ -633,27 +711,50 @@ document.getElementById('kpiTotal').textContent = DATA.length;
       }
     }]
   });
-})();
+}
 
-// ── CHART 2: HORIZONTAL BAR – by Status ──────────────────────────────────────
-(function() {
-  let gaCount = 0, relCount = 0, erCount = 0;
-  DATA.forEach(d => {
+// ── CHART 2: HORIZONTAL BAR – by Status (clickable) ──────────────────────────
+let chartStatus = null;
+
+// maps bar-index → filter key
+const STATUS_KEYS = ['GA', 'Released', 'ER'];
+
+function countsByStatus(filtered) {
+  let ga = 0, rel = 0, er = 0;
+  filtered.forEach(d => {
     PLATFORMS.forEach(p => {
       const v = d[p];
-      if (v === 'GA') gaCount++;
-      else if (v === 'Released') relCount++;
-      else if (v === 'ER') erCount++;
+      if (v === 'GA') ga++;
+      else if (v === 'Released') rel++;
+      else if (v === 'ER') er++;
     });
   });
+  return [ga, rel, er];
+}
+
+function barColors() {
+  return STATUS_KEYS.map(k =>
+    activeStatusFilter === k ? '#f0a500' :
+    activeStatusFilter !== null ? '#1a3a6b' : '#1a73e8'
+  );
+}
+
+function updateChartStatus(filtered) {
+  const counts = countsByStatus(filtered);
+  if (chartStatus) {
+    chartStatus.data.datasets[0].data = counts;
+    chartStatus.data.datasets[0].backgroundColor = barColors();
+    chartStatus.update();
+    return;
+  }
   const ctx = document.getElementById('chartStatus').getContext('2d');
-  new Chart(ctx, {
+  chartStatus = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: ['General Availability', 'Released', 'Early Release'],
       datasets: [{
-        data: [gaCount, relCount, erCount],
-        backgroundColor: ['#1a73e8', '#1a73e8', '#1a73e8'],
+        data: counts,
+        backgroundColor: barColors(),
         borderRadius: 2,
         barThickness: 24
       }]
@@ -667,17 +768,19 @@ document.getElementById('kpiTotal').textContent = DATA.length;
         tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.x } }
       },
       scales: {
-        x: {
-          grid: { color: '#333' },
-          ticks: { color: '#888', font: { size: 10 } },
-          beginAtZero: true
-        },
-        y: {
-          grid: { display: false },
-          ticks: { color: '#ccc', font: { size: 11 } }
+        x: { grid: { color: '#333' }, ticks: { color: '#888', font: { size: 10 } }, beginAtZero: true },
+        y: { grid: { display: false }, ticks: { color: '#ccc', font: { size: 11 } } }
+      },
+      layout: { padding: { right: 32 } },
+      onClick(event, elements) {
+        if (elements.length > 0) {
+          const idx = elements[0].index;
+          applyFilter(STATUS_KEYS[idx]);
         }
       },
-      layout: { padding: { right: 32 } }
+      onHover(event, elements) {
+        event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+      }
     },
     plugins: [{
       id: 'barLabels',
@@ -700,23 +803,23 @@ document.getElementById('kpiTotal').textContent = DATA.length;
       }
     }]
   });
-})();
+}
 
 // ── CHART 3: HEATMAP TABLE ────────────────────────────────────────────────────
-(function() {
+function updateHeatmap(filtered) {
   const matrix = {};
   PLATFORMS.forEach(p => {
     matrix[p] = {};
     QUARTERS.forEach(q => { matrix[p][q] = 0; });
   });
-  DATA.forEach(d => {
+  filtered.forEach(d => {
     PLATFORMS.forEach(p => {
       const v = d[p];
       if (v && v !== '-') matrix[p][d.status]++;
     });
   });
 
-  const maxVal = Math.max(...PLATFORMS.flatMap(p => QUARTERS.map(q => matrix[p][q])));
+  const maxVal = Math.max(1, ...PLATFORMS.flatMap(p => QUARTERS.map(q => matrix[p][q])));
 
   function heatClass(v) {
     if (v === 0) return 'heat-0';
@@ -728,7 +831,6 @@ document.getElementById('kpiTotal').textContent = DATA.length;
   html += '<thead><tr><th class="row-label"></th>';
   QUARTERS.forEach(q => { html += `<th>${q}</th>`; });
   html += '</tr></thead><tbody>';
-
   PLATFORMS.forEach((p, i) => {
     html += `<tr><td class="row-label">${PLATFORM_LABELS[i]}</td>`;
     QUARTERS.forEach(q => {
@@ -739,7 +841,7 @@ document.getElementById('kpiTotal').textContent = DATA.length;
   });
   html += '</tbody></table>';
   document.getElementById('heatmapWrap').innerHTML = html;
-})();
+}
 
 // ── DATA TABLE ────────────────────────────────────────────────────────────────
 function badge(val) {
@@ -747,11 +849,12 @@ function badge(val) {
   return `<span class="badge badge-${val}">${val}</span>`;
 }
 
-function renderTable(filter) {
-  const rows = filter === 'All' ? DATA : DATA.filter(d => d.status === filter);
+function renderTable(quarterFilter, filteredData) {
+  const source = filteredData || getFilteredData();
+  const rows = quarterFilter === 'All' ? source : source.filter(d => d.status === quarterFilter);
   const tbody = document.getElementById('tableBody');
-  tbody.innerHTML = rows.map((d, i) => `
-    <tr data-idx="${DATA.indexOf(d)}">
+  tbody.innerHTML = rows.map(d => `
+    <tr data-key="${d.key}" data-status="${d.status}">
       <td><a class="jira-link" href="https://jira.tools.sap/browse/${d.key}" target="_blank" onclick="event.stopPropagation()">${d.key}</a></td>
       <td>${d.status}</td>
       <td class="name-col" title="${d.summary.replace(/"/g,'&quot;')}">${d.summary}</td>
@@ -766,15 +869,16 @@ function renderTable(filter) {
     </tr>`).join('');
 
   tbody.querySelectorAll('tr').forEach(tr => {
-    tr.addEventListener('click', () => openModal(DATA[+tr.dataset.idx]));
+    const key = tr.dataset.key;
+    const status = tr.dataset.status;
+    const item = DATA.find(d => d.key === key && d.status === status);
+    if (item) tr.addEventListener('click', () => openModal(item));
   });
 }
 
 document.getElementById('quarterFilter').addEventListener('change', e => {
   renderTable(e.target.value);
 });
-
-renderTable('All');
 
 // ── MODAL ─────────────────────────────────────────────────────────────────────
 const overlay = document.getElementById('modalOverlay');
@@ -799,6 +903,74 @@ function openModal(d) {
 overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
 modalClose.addEventListener('click', () => overlay.classList.remove('open'));
 document.addEventListener('keydown', e => { if (e.key === 'Escape') overlay.classList.remove('open'); });
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+updateAll();
+</script>
+  {"key":"1ECSPBM-11968","status":"Q1 / 2027","summary":"GCP micro-segmentation enablement","teaser":"Micro-segmentation on GCP enables workload isolation at the SAP System (SID) level by utilizing GCP Network Tags. This method allows for fine-grained control of traffic within subnets, overcoming the limitations of traditional macro-segmentation, which restricts traffic control to between subnets.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"ER","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-11966","status":"Q4 / 2026","summary":"Azure micro-segmentation enablement","teaser":"Micro-segmentation on Azure enables workload isolation at the SAP System (SID) level by utilizing Azure Application Security Groups. This method allows for fine-grained control of traffic within subnets, overcoming the limitations of traditional macro-segmentation, which restricts traffic control to between subnets.","ACS":"-","AWS":"-","Azure":"ER","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14673","status":"Q4 / 2026","summary":"BRIM on Containers onboarding - EPIC","teaser":"SAP BRIM on ECS: The foundation for a scalable, cloud-native charging and mediation platform.","ACS":"-","AWS":"ER","Azure":"ER","CDC":"-","GCP":"ER","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-11966","status":"Q1 / 2027","summary":"Azure micro-segmentation enablement","teaser":"Micro-segmentation on Azure enables workload isolation at the SAP System (SID) level by utilizing Azure Application Security Groups. This method allows for fine-grained control of traffic within subnets, overcoming the limitations of traditional macro-segmentation, which restricts traffic control to between subnets.","ACS":"-","AWS":"-","Azure":"GA","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-11968","status":"Q2 / 2027","summary":"GCP micro-segmentation enablement","teaser":"Micro-segmentation on GCP enables workload isolation at the SAP System (SID) level by utilizing GCP Network Tags. This method allows for fine-grained control of traffic within subnets, overcoming the limitations of traditional macro-segmentation, which restricts traffic control to between subnets.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-10972","status":"Q4 / 2026","summary":"Pacemaker Enablement for IBM Cloud - HANA SU /NW","teaser":"Basic Pacemaker Enablement on IBM Cloud","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"GA","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-13185","status":"Q4 / 2026","summary":"BRIM solution enablement on HANA on IBM Cloud","teaser":"Enable BRIM solution with HANA DB on IBM Cloud.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"GA","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-13948","status":"Q4 / 2026","summary":"Enable Route Based VPN on IBM Cloud","teaser":"Enable route-based VPN services for customer connectivity to IBM Cloud.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"GA","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14035","status":"Q4 / 2026","summary":"Enable CIS WAF and Public Path on IBM Cloud","teaser":"Enable a secure WAF offering and public-path connectivity for customers on IBM Cloud.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"GA","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14229","status":"Q4 / 2026","summary":"Evaluate gcFUSE for bucket mounting","teaser":"Evaluate gcFUSE for mounting GCP storage buckets by validating performance, compatibility, and integration with existing GCFS workflows to assess suitability for production use.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14239","status":"Q4 / 2026","summary":"GCFS – Immutability using Backup Vault","teaser":"Implement GCFS immutability using Backup Vault by configuring immutable retention policies and validating tamper-proof backups. This enhances data integrity, ensures compliance, and protects against accidental or malicious data modification.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14271","status":"Q4 / 2026","summary":"Instance migration between machine types","teaser":"Develop a workflow to enable smooth migration between GCP instance families, ensuring safe scaling while reducing operational risks and improving performance on newer instance types.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14482","status":"Q4 / 2026","summary":"SAPIQ on IBM Cloud Enablement","teaser":"Enable SAP IQ on IBM Cloud","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"GA","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-15343","status":"Q4 / 2026","summary":"Enable India Mumbai Cloud Region","teaser":"IBM Cloud is expanding its offerings in the Mumbai region. This new addition will provide customers with greater flexibility and choice, enabling them to select their preferred location for hosting SAP workloads.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"GA","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-16259","status":"Q4 / 2026","summary":"GCP Cloud (Native Replication) - SAP BI - HA (SDDR) and DR (LDDR) Enablement","teaser":"SAP Business Intelligence Platform SDDR/LDDR enablement using GCP Cloud native replication","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-16430","status":"Q4 / 2026","summary":"X5 Infrastructure Readiness & Platform Enablement","teaser":"Prepare the test landscape, validation checklists, and test plan to ensure smooth and timely testing for X5 enablement.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-5190","status":"Q4 / 2026","summary":"Internet edge redesign (Secure Access/SSE) Umbrella","teaser":"Implement Cisco SSE for ~8,000 customers, impacting infrastructure and network security. It enhances perimeter security with improved threat detection, secure access, centralised policy management, and modern network protection, strengthening the security posture and enabling real-time threat detection and response.","ACS":"-","AWS":"-","Azure":"GA","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-6930","status":"Q4 / 2026","summary":"Zone Resilient VM Feature with Premium ZRS Disks","teaser":"Enable the Zone-Resilient VM feature on ZRS disks to provide zonal high availability at the infrastructure level when replication is not available at the solution level. It also enables faster VM recovery in another zone using ZRS storage during zonal outages with minimal post-failover effort.","ACS":"-","AWS":"-","Azure":"GA","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-13120","status":"Q1 / 2027","summary":"SSLENFORCE for DB2","teaser":"Enable and enforce SSL encryption (“sslenforce”) for all DB2 database connections to enhance security and ensure data in transit is encrypted.","ACS":"-","AWS":"GA","Azure":"GA","CDC":"-","GCP":"GA","IBM":"GA","SAP_DC":"GA","StackIT":"-"},
+  {"key":"1ECSPBM-14201","status":"Q1 / 2027","summary":"Edge Integration Cell as a solution into ECS portfolio.","teaser":"SAP Edge Integration Cell, an extension to Integration Suite on BTP, is an on-premise runtime engine that delivers an integration solution across cloud and on-premise solutions with a common integration platform.","ACS":"-","AWS":"GA","Azure":"GA","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14673","status":"Q1 / 2027","summary":"BRIM on Containers onboarding - EPIC","teaser":"SAP BRIM on ECS: The foundation for a scalable, cloud-native charging and mediation platform.","ACS":"-","AWS":"GA","Azure":"GA","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-16196","status":"Q1 / 2027","summary":"AWS High Availability 99.95","teaser":"Enable AWS 99.95% High Availability service delivery on AWS.","ACS":"-","AWS":"GA","Azure":"-","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-10550","status":"Q4 / 2026","summary":"Advanced DDoS Mitigation for RISE","teaser":"The aim of this service is to provide AWS Shield Advanced and Azure DDoS Protection for DDoS mitigation for RISE customers on AWS and Azure.","ACS":"-","AWS":"GA","Azure":"GA","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-11967","status":"Q4 / 2026","summary":"AWS micro-segmentation enablement","teaser":"Micro-segmentation on AWS enables workload isolation at the SAP System (SID) level by utilizing AWS Security Groups. This method allows for fine-grained control of traffic within subnets, overcoming the limitations of traditional macro-segmentation, which restricts traffic control to between subnets.","ACS":"-","AWS":"GA","Azure":"-","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-13196","status":"Q4 / 2026","summary":"SAP HANA Data Lake (HDL) on SAP Public Cloud Integration","teaser":"Integration of SAP HANA Data Lake Files (HDL) with Cloud Services","ACS":"-","AWS":"GA","Azure":"GA","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"GA","StackIT":"-"},
+  {"key":"1ECSPBM-13250","status":"Q4 / 2026","summary":"SAP HANA Cloud, Data Lake Relational Engine Integration","teaser":"Integration of SAP HANA Data Lake Files (HDL) with Cloud Services","ACS":"-","AWS":"GA","Azure":"GA","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"GA","StackIT":"-"},
+  {"key":"1ECSPBM-16086","status":"Q4 / 2026","summary":"Raven Self-Service - Premium offering","teaser":"Raven Self-Service (Phase 2) includes a multi-tenant frontend that allows customers to access their own dashboards, reports, alerts, and basic automation and orchestration features. It also includes enhancements to the existing Phase 1 scope. New dashboards and reports in scope for Phase 2 include Application Security (including threat dashboards and UBA analytics).","ACS":"-","AWS":"GA","Azure":"GA","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-16121","status":"Q4 / 2026","summary":"FWaaS Automatic Policy Builder","teaser":"Currently the default policy has been preloaded for every customer FWaaS landscape. And we request customer custom policies according to the requirement.","ACS":"-","AWS":"GA","Azure":"GA","CDC":"-","GCP":"GA","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-18099","status":"Q4 / 2026","summary":"Region Enablement - Chile: sa-south-1","teaser":"Enable support for the AWS Chile region within our infrastructure and services. This includes configuring region-specific settings, ensuring compatibility of existing workloads, and updating deployment pipelines to allow provisioning of resources in the Chile region.","ACS":"-","AWS":"GA","Azure":"-","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-9858","status":"Q4 / 2026","summary":"Cloud Native Network Connections (Resource GW and Resource endpoints) for RISE","teaser":"The Seamless Private Connectivity offering, using AWS Resource Gateway and Amazon VPC Lattice, abstracts the network layer, enabling customers to connect existing infrastructure to SAP RISE in days. It avoids IP conflicts, eliminates redesigns, preserves network control, and accelerates provisioning, onboarding, and time to value.","ACS":"-","AWS":"GA","Azure":"-","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-9947","status":"Q4 / 2026","summary":"Multi-AZ Volumes Review","teaser":"Enables higher application resilience with synchronous EBS replication across Availability Zones, providing improved availability, zero data loss protection, and simplified recovery for critical workloads.","ACS":"-","AWS":"GA","Azure":"-","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-12569","status":"Q1 / 2027","summary":"Pacemaker Enablement for Alibaba Cloud Services","teaser":"99.9% Availability SLA architecture with Pacemaker Cluster on Alibaba Cloud.","ACS":"GA","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14721","status":"Q4 / 2026","summary":"FWaaS on Alibaba Cloud Services","teaser":"FWaaS is an established security solution for RISE with SAP, Private Cloud Edition customers, providing macro-segmentation, customized rule bases for traffic filtering, and deep packet inspection capabilities for improved security.","ACS":"GA","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-10072","status":"Released","summary":"PMK to ECS managed Keys for data at rest","teaser":"Encryption keys at the storage layer will be migrated from platform-managed keys (PMK) to ECS-managed keys for Azure hyperscalers.","ACS":"-","AWS":"-","Azure":"Released","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-12223","status":"Released","summary":"GCP Service Controls: Rollout Framework & Security Perimeter Design","teaser":"Define the security perimeter and rollout steps to enable VPC Service Controls for all customers, based on Vodafone pilot learnings, ensuring compliance while addressing customer-specific exceptions.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-12392","status":"Released","summary":"Consistency snapshot enablement for striped volume with snappy","teaser":"Enable agent-based, crash-consistent snapshots for large HANA instances with striped Hyperdisk volumes to improve performance, reduce TCO, and ensure reliable backups using the Google Cloud SAP Agent.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-13181","status":"Released","summary":"SAP BI enablement on Linux OS and ASE DB","teaser":"Enable SAP Business Intelligence Platform (Linux/ASE) on IBM Cloud.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"Released","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-13182","status":"Released","summary":"NW ABAP and JAVA based solution enablement on ASE on IBM Cloud","teaser":"Enable Netweaver ABAP and JAVA solution with ASE DB on IBM Cloud.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"Released","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-13183","status":"Released","summary":"SAP Content Server on MaxDB enablement on IBM Cloud.","teaser":"Enable SAP Content Server on MaxDB on IBM Cloud.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"Released","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-13237","status":"Released","summary":"SAP Solution Manager - ABAP and JAVA","teaser":"Enable SAP Solution Manager on HANA on IBM Cloud to support the deployment and hosting of Solution Manager systems on HANA databases via IBM Cloud PowerVS.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"Released","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-13288","status":"Released","summary":"Conversion to Zonal Deployment Architecture on Azure","teaser":"Enable transition from non-zonal (Availability Set-based) to zonal deployment in Azure to improve resilience and fault isolation across Availability Zones. Service applies only to Azure regions supporting Availability Zones.","ACS":"-","AWS":"-","Azure":"Released","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-13457","status":"Released","summary":"99.95% SLA - Phase 1 implementation","teaser":"Enhanced architecture to offer 99.95% availability SLA on GCP.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14007","status":"Released","summary":"Enable Multiple Service Account Support","teaser":"Introduce support for multiple Service Accounts in standard RISE projects to enable more granular permission management for Compute Instances and improve operational flexibility for both SAP and customers.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14231","status":"Released","summary":"GCFS Premium evaluate alternatives","teaser":"Evaluate alternative solutions for GCFS Premium by comparing performance, reliability, and cost to identify the most suitable option. Deliver clear recommendations to support adoption, migration, or enhancement decisions.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14232","status":"Released","summary":"GCFS replication for Regional tier","teaser":"Implementation of GCFS replication for the Regional tier to improve data resilience, availability, and business continuity through validated replication and failover mechanisms.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14245","status":"Released","summary":"Industrialize higher SLA - 99.95%","teaser":"Industrialize 99.95% SLA service delivery through automation, monitoring, and operational improvements.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14480","status":"Released","summary":"ASE on IBM Cloud Enablement","teaser":"Enable SAP ASE database support on IBM Cloud VPC.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"Released","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14554","status":"Released","summary":"SAP DS enablement on Linux OS and ASE DB","teaser":"Enable SAP Data Services support for Linux and ASE on IBM Cloud Platform","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"Released","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-15342","status":"Released","summary":"Enable India Chennai Cloud Region","teaser":"IBM Cloud is expanding its offerings in the India region. This new addition will provide customers with greater flexibility and choice, enabling them to select their preferred location for hosting SAP workloads.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"-","IBM":"Released","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-15746","status":"Released","summary":"GCFS zonal tier POC and enablement","teaser":"Execute a GCFS Zonal Tier PoC to validate performance, security, and TIC integration, followed by enablement in TIC self-service. This introduces a cost-effective storage option for non-critical workloads and expands workload-aligned storage offerings within TIC.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-15747","status":"Released","summary":"VPC service control planning and implementation with SM team for VD6","teaser":"Plan and implement VPC Service Controls (VPC-SC) for VD6 in collaboration with the SM team.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-16037","status":"Released","summary":"In-Transit Encryption Options for Filestore","teaser":"Evaluate and implement Kerberos-based in-transit encryption (NFSv4.1, krb5p) for Google Cloud File Store in RISE environments to meet regulatory and customer requirements. Includes building a VLAB, testing scenarios, documenting the solution, and preparing for operational handover.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-17380","status":"Released","summary":"SAP RISE Global M-Series Migrations (M1→M3 / M2→M4)","teaser":"Migrate SAP customer workloads from legacy Google Cloud memory-optimized instances to next-generation platforms as part of Google data center infrastructure modernization.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-17529","status":"Released","summary":"SAP Agent Version Upgrade Plan for GCO","teaser":"Upgrade SAP Agent to v3.15 across SAP X4 machines to enable enhanced monitoring and latest supported capabilities.","ACS":"-","AWS":"-","Azure":"-","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-14752","status":"Released","summary":"Aim to get better Flexibility across instance families","teaser":"Expand Flex ISP to increase instance family flexibility","ACS":"-","AWS":"Released","Azure":"-","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-15383","status":"Released","summary":"Raven Self-Service - Standard offering","teaser":"Raven Self-Service (Phase-1) includes a frontend with multi tenancy where a customer can see his own Dashboards and Reports for Vulnerability & Patch, Comply & Hardening, Network & Endpoint Security, Application security (only threat activity).","ACS":"-","AWS":"Released","Azure":"Released","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-5263","status":"Released","summary":"ASE Database Encryption by Default","teaser":"Enable database encryption by default in ECS to deliver stronger security and compliance for new customer systems.","ACS":"-","AWS":"Released","Azure":"Released","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-5294","status":"Released","summary":"SAP Cloud Connector as Containerized Service","teaser":"Running SAP Cloud Connector as a container service orchestrated by SAP Gardener is a significant step toward application modernization and cloud-native adoption, helping ECS operate the service with improved availability and greater resilience.","ACS":"-","AWS":"Released","Azure":"Released","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-5302","status":"Released","summary":"SAP WebDispatcher as Containerized Service","teaser":"Deploying SAP Web Dispatcher as a containerized service orchestrated by SAP Gardener represents a key step toward application modernization and cloud-native adoption, enabling ECS to achieve improved availability and enhanced resilience.","ACS":"-","AWS":"Released","Azure":"Released","CDC":"-","GCP":"Released","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-6541","status":"Released","summary":"AWS - IPv6 enablement for ECS private cloud","teaser":"IPv6 enablement on AWS is a capability extension to networking resources that enables dual-stack (IPv4/IPv6). It allows VPCs, EC2 instances, and Application Load Balancers to communicate over IPv6, providing a large, future-ready address space.","ACS":"-","AWS":"Released","Azure":"-","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-6959","status":"Released","summary":"Region Enablement - Saudi Arabia: me-west-1","teaser":"AWS Cloud is expanding its offerings in the cloud region. This new addition will give our customers greater flexibility and choice, allowing them to select their preferred location for hosting SAP workloads","ACS":"-","AWS":"Released","Azure":"-","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"},
+  {"key":"1ECSPBM-9909","status":"Released","summary":"Loadbalancer for High Availability (LBHA) for HANA - Enablement","teaser":"Enable LBHA functionality for AWS systems with HANA and ABAP/JAVA, ensuring stable IP addresses during failover and supporting seamless high-availability operations.","ACS":"-","AWS":"Released","Azure":"-","CDC":"-","GCP":"-","IBM":"-","SAP_DC":"-","StackIT":"-"}
+];
+
 </script>
 </body>
 </html>
