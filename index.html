@@ -30,6 +30,84 @@
     min-height: 100vh;
   }
 
+  /* ── TOPBAR CENTER ── */
+  .topbar-center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .topbar-center-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: .3px;
+    white-space: nowrap;
+  }
+  .info-btn {
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 20px;
+    color: #aaa;
+    cursor: pointer;
+    font-size: 11px;
+    padding: 3px 12px;
+    transition: background .15s, color .15s;
+    white-space: nowrap;
+  }
+  .info-btn:hover { background: rgba(255,255,255,.15); color: #fff; }
+  .info-btn.open { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+  /* ── INFO PANEL ── */
+  .info-panel {
+    display: none;
+    position: absolute;
+    top: calc(var(--header-h) + 4px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(680px, 90vw);
+    background: #1c1c1c;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    z-index: 300;
+    box-shadow: 0 8px 32px rgba(0,0,0,.6);
+    font-size: 13px;
+    line-height: 1.65;
+    color: #ccc;
+  }
+  .info-panel.open { display: block; }
+  .info-panel h2 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 10px;
+  }
+  .info-panel h3 {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--blue-light);
+    margin: 14px 0 4px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .info-panel ul {
+    margin: 0; padding-left: 18px;
+  }
+  .info-panel ul li { margin-bottom: 5px; }
+  .info-panel li strong { color: #fff; }
+  .info-panel .info-note {
+    margin-top: 14px;
+    padding: 10px 14px;
+    background: rgba(26,115,232,.12);
+    border-left: 3px solid var(--blue);
+    border-radius: 0 4px 4px 0;
+    font-size: 12px;
+    color: #bbb;
+  }
+  .info-panel .info-note strong { color: #fff; }
+
   /* ── TOP BAR ── */
   .topbar {
     background: #111;
@@ -413,6 +491,10 @@
     <a class="home-btn" href="https://sap.sharepoint.com/teams/ECSCustomerFacingRoadmap/SitePages/Roadmap-Insights.aspx" title="Back to Roadmap Insights">&#8962;</a>
     <button class="tab-btn" onclick="activeStatusFilter=null;activePlatformFilter=null;updateAll();">External Customer Roadmap</button>
   </div>
+  <div class="topbar-center">
+    <div class="topbar-center-title">SAC Dashboard – GCO Roadmap Overview</div>
+    <button class="info-btn" id="infoBtn" onclick="toggleInfo()">ℹ About this Dashboard</button>
+  </div>
   <div class="topbar-right">
     <div class="brand-title">
       <img src="CLEO%20Logo%20light%20soft.svg" alt="GCO Global Cloud Operations" style="height:80px;display:block;">
@@ -421,6 +503,24 @@
     <div class="brand-confidential" style="text-align:right">Strictly Confidential</div>
     <!-- UPDATE DATE HERE each quarter: -->
     <div class="brand-update" style="text-align:right">Last Update: <span id="lastUpdate"></span></div>
+  </div>
+</div>
+
+<!-- INFO PANEL -->
+<div class="info-panel" id="infoPanel">
+  <h2>SAC Dashboard – GCO Roadmap Overview</h2>
+  <p>The internal SAC dashboard provides a central overview of the current roadmap topics of SAP Global Cloud Operations (GCO). It is intended for internal stakeholders who require a structured view of the initiatives communicated by the various GCO units in the current quarter.</p>
+  <h3>Content &amp; Structure</h3>
+  <p>The roadmap overview is organized along three key dimensions:</p>
+  <ul>
+    <li><strong>Status</strong> – Each roadmap topic is tagged with its current progress status, making it immediately visible which initiatives are in planning, in execution, or already completed.</li>
+    <li><strong>Hyperscaler</strong> – Topics are mapped to the relevant cloud platforms (e.g. AWS, Azure, GCP, SAP DC), enabling platform-specific analysis and prioritization.</li>
+    <li><strong>Quarters</strong> – The quarterly timeline supports forward planning and clearly shows which deliverables are expected within each period.</li>
+  </ul>
+  <div class="info-note">
+    <strong>Note on Data Source &amp; Accuracy</strong><br>
+    This view is a parallel copy of the official SAC dashboard, maintained by the Roadmap Owner and provided here as a complementary reference.<br><br>
+    As the accountable owner of the GCO Roadmap, I ensure that the information available here is accurate, complete, and up to date at all times. The central SAC dashboard may be subject to system-side update delays — this copy therefore serves as a reliable reference for all stakeholders who depend on verified and timely data.
   </div>
 </div>
 
@@ -964,6 +1064,22 @@ function openModal(d) {
 overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
 modalClose.addEventListener('click', () => overlay.classList.remove('open'));
 document.addEventListener('keydown', e => { if (e.key === 'Escape') overlay.classList.remove('open'); });
+
+// ── INFO PANEL ───────────────────────────────────────────────────────────────
+function toggleInfo() {
+  const panel = document.getElementById('infoPanel');
+  const btn = document.getElementById('infoBtn');
+  const open = panel.classList.toggle('open');
+  btn.classList.toggle('open', open);
+}
+document.addEventListener('click', e => {
+  const panel = document.getElementById('infoPanel');
+  const btn = document.getElementById('infoBtn');
+  if (panel.classList.contains('open') && !panel.contains(e.target) && e.target !== btn) {
+    panel.classList.remove('open');
+    btn.classList.remove('open');
+  }
+});
 
 // ── LAST UPDATE DATE (today, auto) ───────────────────────────────────────────
 (function() {
